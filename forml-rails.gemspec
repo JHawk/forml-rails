@@ -5,7 +5,7 @@ Gem::Specification.new do |gem|
   gem.authors       = ["Joshua Hawkins"]
   gem.email         = ["josh.r.hawk@gmail.com"]
   gem.summary       = %q{Forml adapter for the Rails asset pipeline.}
-  gem.description   = %q{Forml adapter for the Rails asset pipeline.}
+  gem.description   = %q{Enjoy Forml in your Rails with forml-rails, an adapter for the Rails asset pipeline.}
   gem.homepage      = "https://github.com/JHawk/forml-rails"
 
   gem.files         = `git ls-files`.split($\)
