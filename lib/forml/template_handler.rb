@@ -6,8 +6,7 @@ module Forml
 
     def self.call(template)
       compiled_source = erb_handler.call(template)
-      puts "blah "*100
-      # "CoffeeScript.compile(begin;#{compiled_source};end)"
+      # TODO
     end
   end
 end
