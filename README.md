@@ -1,6 +1,6 @@
 # Forml-Rails
 
-Support for Forml in Rails. 
+Support for [Forml](https://github.com/texodus/forml) in Rails. 
 
 ## Installation
 
