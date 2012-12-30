@@ -1,6 +1,5 @@
 require 'test_helper'
 require 'rails/generators/rails/controller/controller_generator'
-require 'generators/forml/forml_generator'
 
 class ControllerGeneratorTest < Rails::Generators::TestCase
   tests Rails::Generators::ControllerGenerator

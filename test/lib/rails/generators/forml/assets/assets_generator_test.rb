@@ -1,8 +1,8 @@
-require_relative '../../../test_helper'
-require 'generators/forml/forml_generator'
+require_relative '../../../../../test_helper'
+require 'rails/generators/forml/assets/assets_generator'
 
-class FormlGeneratorTest < Rails::Generators::TestCase
-  tests Forml::Generators::FormlGenerator
+class AssetsGeneratorTest < Rails::Generators::TestCase
+  tests Forml::Generators::AssetsGenerator
 
   destination File.expand_path("../tmp", __FILE__)
   setup :prepare_destination
