@@ -7,15 +7,10 @@ module Forml
 
     def compile
       begin
-        # cmd = %Q{#{command} #{@file}}
-
-        puts "*"*1000
-
-        cmd = %Q{forml #{@file}}
-
+        cmd = %Q{forml #{@file} -silent -no-opt}
         puts cmd
-
         result = `#{cmd}`
+        puts "Forml compiled."
       rescue Exception
         raise Error, "compression failed: #{result || $!}"
       end
