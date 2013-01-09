@@ -8,7 +8,9 @@ require 'forml/forml_template'
 module Forml
   class FormlRails < Rails::Engine
     config.app_generators.javascript_engine :forml
-
-    app.assets.register_engine '.forml', FormlTemplate
+    
+    initializer :register_forml do |app|
+      app.assets.register_engine '.forml', FormlTemplate
+    end
   end
 end
