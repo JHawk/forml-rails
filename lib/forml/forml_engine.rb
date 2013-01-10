@@ -7,7 +7,11 @@ module Forml
 
     def compile
       begin
-        cmd = %Q{forml #{@file} -silent -flush -no-opt}
+        cmd = if ::Rails.env.production?
+          %Q{forml #{@file} -silent -flush}
+        else
+          %Q{forml #{@file} -silent -flush -no-opt}
+        end
         puts cmd
         result = `#{cmd}`
         puts "Forml compiled!"
