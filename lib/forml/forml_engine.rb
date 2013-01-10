@@ -7,10 +7,11 @@ module Forml
 
     def compile
       begin
-        cmd = %Q{forml #{@file} -silent -no-opt}
+        cmd = %Q{forml #{@file} -silent -flush -no-opt}
         puts cmd
         result = `#{cmd}`
-        puts "Forml compiled."
+        puts "Forml compiled!"
+        result
       rescue Exception
         raise Error, "compression failed: #{result || $!}"
       end
