@@ -1,4 +1,6 @@
 module Forml
+  class Error < StandardError; end
+
   class FormlEngine
     def initialize(file, options)
       @file = file
@@ -14,10 +16,9 @@ module Forml
         end
         puts cmd
         result = `#{cmd}`
-        puts "Forml compiled!"
         result
       rescue Exception
-        raise Error, "compression failed: #{result || $!}"
+        raise Error, "Compilation failed: #{result || $!}"
       end
     end
   end

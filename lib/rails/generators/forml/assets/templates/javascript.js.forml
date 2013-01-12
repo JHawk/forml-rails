@@ -1,1 +1,345 @@
-TODO - make this an actual template
+module tetris
+
+    open prelude.string
+    open prelude
+    open prelude.html
+    open prelude.array
+    
+    open prelude.html as html
+    
+    n_rows    = 19
+    n_columns = 9
+
+    Piece = Array (Array Num)
+    
+    pieces: Array Piece =
+    
+        let x = 0
+            o = -1
+
+        [ [ [ x ]
+            [ x ]
+            [ x ]
+            [ x ] ]
+    
+          [ [ x, o ]
+            [ x, o ]
+            [ x, x ] ]
+            
+          [ [ o, x ]
+            [ o, x ]
+            [ x, x ] ]
+    
+          [ [ x, x ]
+            [ x, x ] ]
+            
+          [ [ o, x, o ]
+            [ x, x, x ] ]
+            
+          [ [ x, x, o ]
+            [ o, x, x ] ]
+            
+          [ [ o, x, x ]
+            [ x, x, o ] ] ]
+                        
+    colors = [ [ "#0C3555", "#08789E", "#76F61E", "#F7D909", "#E11E6A" ]
+               [ "#320010", "#74220F", "#B8A04E", "#E1D46C", "#80611D" ]
+               [ "#542437", "#53777A", "#C02942", "#D95B43", "#53777A" ]  ]
+    
+    Board =
+
+        { piece: Piece
+          board: Array (Array Num)
+          score: Num
+          timer: Num
+          level: Num
+
+          x: Num
+          y: Num }
+    
+    play = do
+         
+        game  <- game_template
+        board <- new_board
+
+        "body" $+ game
+        draw_board board
+        
+        move board (-1) 0 'on_key 37
+        rot  board        'on_key 38
+        move board 1    0 'on_key 39
+        move board 0    1 'on_key 40
+
+    game_template = `jQuery("#game").html()`
+
+    every: Num -> JS _ -> JS Num
+    every n action = `setInterval(action, n)`
+
+    set_timer ref board = `board.timer = ref` 
+    
+    stop_timer { timer = x, _ } = `clearInterval(x)`
+
+    to_commas: Num -> String | x =
+    
+        let r = "(\\d)(?=(\\d\\d\\d)+(?!\\d))"
+        in  to_string x 'replace (regex r "g") "$1,"
+         
+    to_commas 1000 == "1,000"
+
+    new_board: JS Board = do
+
+        let new_row = yield -1 'times (n_columns + 1)
+        
+        piece <- random_piece 0
+        board <- sequence (new_row 'times (n_rows + 1))
+
+        return {
+            piece = piece
+            board = board
+            score = 0
+            timer = 0
+            level = 1
+
+            x = 3
+            y = 0
+        }
+
+    (n_rows + 1) * (n_columns + 1) == do!
+        new_board 'fmap (sum .: map length .: .board)
+
+    private   
+
+    with_board f = do!
+        board <- new_board
+        let result = f board
+        stop_timer board
+        yield result
+        
+    with_board λ board = board.board 'length == n_rows + 1
+    with_board λ board = board.board 'get 0 'length == n_columns + 1
+
+    inline at x y b = b 'get y 'get x /= -1
+
+    is_valid {board: board, piece: piece, x: x, y: y, _} =
+
+        x >= 0 && x_bound? && y_bound? && intersect?
+
+        where by f n = 0 .. (n - 1) |> map f |> all?
+
+              inline intersect? =
+                  piece 'length 'by λ r =
+                      piece 'get r 'length 'by λ c =
+                          let piece? = piece 'at c r
+                              board? = board 'at (x + c) (y + r)
+                          not (piece? && board?)
+
+              inline x_bound? =
+                  x + length (get 0 piece) <= n_columns + 1
+
+              inline y_bound? =
+                  y + length piece <= n_rows + 1
+
+    with_board is_valid
+
+    with_board λ board = do!
+        sequence (tick board 'times 45)
+        yield is_valid board
+
+    with_board λ board = do!
+        new_piece board
+        yield not (is_valid board)
+
+    with_board λ board = do!
+        sequence (tick board 'times 400)
+        yield not (is_valid board)
+
+    draw_board board = do
+        "#score" $= to_commas board.score
+        "#level" $= board.level
+        "#board" $| "background-color" <: colors 'get (board.level - 1) 'get 0
+        "#board" $| "border-color"     <: colors 'get (board.level - 1) 'get 1
+        stop_timer board
+        ref <- tick board 'every ((0.7 ^ board.level) * 400)
+        board 'set_timer ref
+
+    tick board = do
+        `board.y += 1`
+        if not (is_valid board) then do
+            `board.y = board.y - 1`
+            new_piece board
+            clear_lines board
+        "#board" $= draw board
+
+    with_board λ board = do!
+        tick board
+        tick board
+        yield board.y == 2
+
+    with_board λ board =
+        let board_sim n = do
+                sequence (tick board 'times n)
+                yield sum <| map sum board.board
+        in  do! before <- board_sim 16
+                after  <- board_sim 5
+                yield before == -200 and after > -200
+
+    random_piece: Num -> JS Piece | level = do
+        r <- rand (length pieces)
+        c <- rand (length (get level colors) - 2)
+        let piece = get r pieces
+        yield piece 'map (map λ 0 = c | _ = -1)
+
+    4 <= do! random_piece 0 'fmap (sum .: map sum .: map (map ((+) 1)))
+
+    rotate: Piece -> JS Piece | x =
+        var new_row acc piece index col =
+                if index < length piece then do
+                    acc <- put (get col (get index piece)) acc
+                    new_row acc piece (index + 1) col
+                else return do! reverse acc
+        sequence <| map (new_row [] x 0) (0 .. length (get 0 x) - 1)
+
+    get 3 pieces is
+        do! pieces 'get 3 'rotate
+    
+    get 1 pieces is
+        do! pieces 'get 1 'rotate >>= rotate >>= rotate >>= rotate
+            
+    get 4 pieces isnt
+        do! rotate (get 4 pieces) >>= rotate
+
+    move:
+          Board -> Num -> Num -> JS {}
+        | board    x      y    = do
+            `board.x += x`
+            `board.y += y`
+            if is_valid board
+                "#board" $= draw board
+            else do
+                `board.x = board.x - x`
+                `board.y = board.y - y`
+
+    with_board λ board = do!
+        move board 1 0
+        yield board.x == 4
+
+    with_board λ board = do!
+        move board 1 0 'times 50 'sequence
+        yield is_valid board
+
+    -- The up key rotates the current piece
+    
+    rot board = do
+        let old_piece = board.piece 
+        rotated_piece <- rotate board.piece
+        `board.piece = rotated_piece`
+        if is_valid board
+            "#board" $= draw board
+        else 
+            `board.piece = old_piece`
+
+    with_board λ board = do!
+        orig <- clone board
+        rot board 'times 4 'sequence
+        yield orig == board
+    
+    new_piece board = do
+
+        board.piece 'for_each λ row = do!
+            get row board.piece 'for_each λ col = do!
+
+                if board.piece 'at col row 
+                    && (board.y + row <= n_rows + 1)
+                    && (board.x + col <= n_columns + 1)
+
+                    paint board (board.y + row) (board.x + col) (get col (get row board.piece)) 
+         
+        new_piece <- random_piece (board.level - 1)    
+        `board.piece = new_piece`
+        `board.x = 3`
+        `board.y = 0`
+
+    clear_lines board =
+        board.board 'for_each λ row = do!
+            if reduce (&&) (map (λx = x != (-1)) (get row board.board))
+                 clear_row board row
+            
+    with_board λ board = do!
+        let line = 5 'times (n_columns + 1)
+        `board.board[9] = line`
+        clear_lines board
+        yield board.score == 100
+              && sum (map sum board.board) == -200
+        
+    clear_row: Board -> Num -> JS {} | board x = do
+        `board.score += 100`
+        if board.score % 1000 == 0
+            `board.level += 1`
+        draw_board board
+
+        ignore <: sequence <: x .. 1 'map λ row =
+            board.board 'get row 'for_each λ col = do!
+
+                board.board 'get (row - 1)
+                            'get col
+                            'paint board row col
+ 
+    with_board λ board = do!
+        let line = 5 'times (n_columns + 1)
+        `board.board[9] = line`
+        clear_row board 9
+        yield board.score == 100
+              && sum (map sum board.board) == -200
+
+    inline paint board x y color =
+        `board.board[x][y] = color`
+
+    css =
+        "position: absolute;
+         width: 26px;
+         border: 3px solid rgba(0,0,0,0.4);
+         border-right-width: 1px;
+         border-top-width: 1px;
+         border-radius: 3px;
+         height: 26px;"
+
+    inline
+    block_string:
+
+          Num -> Num -> String -> String
+        | x      y      color   =
+            let style =
+                    "top:`y*30`px;
+                     left:`x*30`px;
+                     background-color:`color`;
+                     `css`"
+            "<div style='`style`'></div>"
+
+    draw: Board -> String
+    draw { board: board, piece: piece, x: bx, y: by, level = level, _ } =
+
+        0 .. n_rows 
+          'map λ_ = 0 .. n_columns 
+          'zip_with draw_row (0 .. n_rows)
+          'concat
+
+        where draw_row x = concat .: map ((|>) x) .: map draw_block
+
+              draw_block x y when board 'at x y =
+                  let color = colors 'get (level - 1) 'get (2 + (board 'get y 'get x))
+                  block_string x y color
+
+              draw_block x y when piece_bounds? x y =
+                  let c_idx = piece  'get (y - by) 'get (x - bx)
+                      color = colors 'get (level - 1) 'get (c_idx + 2)
+                  block_string x y color
+
+              draw_block _ _ = ""
+
+              inline piece_bounds? x y =
+                  x - bx >= 0
+                    && x - bx < piece 'get 0 'length
+                    && y - by >= 0
+                    && y - by < length piece
+                    && piece 'at (x - bx) (y - by)
+         
