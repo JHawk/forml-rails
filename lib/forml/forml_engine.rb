@@ -4,15 +4,16 @@ module Forml
   class FormlEngine
     def initialize(file, options)
       @file = file
+      @forml = "forml"
       @options = options
     end
 
     def compile
       begin
         cmd = if ::Rails.env.production?
-          %Q{forml #{@file} -silent -flush}
+          %Q{#{@forml} -silent -flush -no-test #{@file}}
         else
-          %Q{forml #{@file} -silent -flush -no-opt}
+          %Q{#{@forml} -silent -flush -no-opt -no-test #{@file}}
         end
         puts cmd
         result = `#{cmd}`
