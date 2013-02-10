@@ -41,4 +41,15 @@ describe Forml::FormlEngine do
       end
     end
   end
+
+  describe "#filter_flags" do
+    it "removes the failed flags" do 
+      flag = "-flag"
+      has_flag = "blah #{flag}"
+      flags = %w[ -flag -another]
+      assert_block do 
+        !@forml_engine.filter_flags(has_flag,flags).include?(flag)
+      end
+    end 
+  end
 end
