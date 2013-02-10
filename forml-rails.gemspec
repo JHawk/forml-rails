@@ -14,4 +14,5 @@ Gem::Specification.new do |gem|
   gem.name          = "forml-rails"
   gem.require_paths = ["lib"]
   gem.version       = Forml::VERSION
+  gem.add_development_dependency('rspec')
 end
